@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ипотечный калькулятор</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f5f6f8; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; }
+        
+        /* Карточки */
+        .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        
+        /* Поля ввода */
+        .input-group { margin-bottom: 20px; }
+        .label { font-size: 12px; color: #777; margin-bottom: 5px; display: block; }
+        .input-wrapper { display: flex; align-items: center; border: 1px solid #ddd; border-radius: 8px; padding: 10px; background: #fff; }
+        .input-wrapper input { border: none; font-size: 18px; width: 100%; outline: none; font-weight: 500; }
+        .suffix { color: #999; font-size: 16px; margin-left: 5px; }
+        
+        /* Слайдеры (ползунки) */
+        input[type=range] { width: 100%; margin-top: 10px; accent-color: #2196F3; cursor: pointer; }
+        
+        /* Результаты */
+        .results { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .result-item { margin-bottom: 15px; }
+        .res-value { font-size: 22px; font-weight: bold; display: block; }
+        .res-label { font-size: 12px; color: #777; }
+        
+        /* Цвета как на скрине */
+        .green-text { color: #27ae60; } /* Цвет платежа */
+        
+        .main-payment { font-size: 28px; margin-bottom: 5px; }
+        
+        /* Адаптив для мобилок */
+        @media (max-width: 400px) {
+            .results { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Блок ввода данных -->
+    <div class="card">
+        <div class="input-group">
+            <span class="label">Стоимость недвижимости</span>
+            <div class="input-wrapper">
+                <input type="number" id="price" value="4000000">
+                <span class="suffix">₽</span>
+            </div>
+            <input type="range" id="priceRange" min="500000" max="50000000" step="100000" value="4000000">
+        </div>
+
+        <div class="input-group">
+            <span class="label">Первоначальный взнос</span>
+            <div class="input-wrapper">
+                <input type="number" id="initial" value="2500000">
+                <span class="suffix">₽</span>
+            </div>
+            <input type="range" id="initialRange" min="0" max="4000000" step="50000" value="2500000">
+        </div>
+
+        <div style="display: flex; gap: 15px;">
+            <div class="input-group" style="flex: 1;">
+                <span class="label">Срок</span>
+                <div class="input-wrapper">
+                    <input type="number" id="years" value="20">
+                    <span class="suffix">лет</span>
+                </div>
+            </div>
+            <div class="input-group" style="flex: 1;">
+                <span class="label">Ставка</span>
+                <div class="input-wrapper">
+                    <input type="number" id="rate" value="10.5">
+                    <span class="suffix">%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Блок результатов -->
+    <div class="card">
+        <div class="result-item" style="border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 15px;">
+            <span class="res-value green-text main-payment" id="monthlyPayment">0 ₽</span>
+            <span class="res-label">Ежемесячный платеж</span>
+        </div>
+
+        <div class="results">
+            <div class="result-item">
+                <span class="res-value" id="loanAmount">0 ₽</span>
+                <span class="res-label">Сумма кредита</span>
+            </div>
+            <div class="result-item">
+                <span class="res-value" id="totalPayout">0 ₽</span>
+                <span class="res-label">Общая выплата</span>
+            </div>
+            <div class="result-item">
+                <span class="res-value" id="overpayment">0 ₽</span>
+                <span class="res-label">Переплата по кредиту</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Инициализация Telegram WebApp
+    const tg = window.Telegram.WebApp;
+    tg.expand(); // Раскрыть на весь экран
+
+    // Элементы
+    const inputs = {
+        price: document.getElementById('price'),
+        priceRange: document.getElementById('priceRange'),
+        initial: document.getElementById('initial'),
+        initialRange: document.getElementById('initialRange'),
+        years: document.getElementById('years'),
+        rate: document.getElementById('rate')
+    };
+
+    const outputs = {
+        monthly: document.getElementById('monthlyPayment'),
+        loan: document.getElementById('loanAmount'),
+        total: document.getElementById('totalPayout'),
+        overpayment: document.getElementById('overpayment')
+    };
+
+    // Форматирование денег (1 000 000)
+    const fmt = (num) => new Intl.NumberFormat('ru-RU').format(Math.round(num)) + ' ₽';
+
+    // Основная функция расчета
+    function calculate() {
+        let price = parseFloat(inputs.price.value) || 0;
+        let initial = parseFloat(inputs.initial.value) || 0;
+        let years = parseFloat(inputs.years.value) || 0;
+        let rate = parseFloat(inputs.rate.value) || 0;
+
+        // Синхронизация слайдеров и полей
+        inputs.priceRange.value = price;
+        inputs.initialRange.max = price; // Взнос не больше цены
+        inputs.initialRange.value = initial;
+
+        if (initial > price) {
+            initial = price;
+            inputs.initial.value = price;
+        }
+
+        let loanAmount = price - initial;
+        let months = years * 12;
+        let monthlyRate = rate / 12 / 100;
+
+        let monthlyPayment = 0;
+        
+        if (loanAmount > 0 && months > 0) {
+            if (monthlyRate === 0) {
+                monthlyPayment = loanAmount / months;
+            } else {
+                monthlyPayment = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, months)) / (Math.pow(1 + monthlyRate, months) - 1);
+            }
+        }
+
+        let totalPayout = monthlyPayment * months;
+        let overpayment = totalPayout - loanAmount;
+
+        // Вывод результатов
+        outputs.monthly.innerText = fmt(monthlyPayment);
+        outputs.loan.innerText = fmt(loanAmount);
+        outputs.total.innerText = fmt(totalPayout);
+        outputs.overpayment.innerText = fmt(overpayment);
+    }
+
+    // Слушатели событий (когда меняем цифры)
+    inputs.price.oninput = () => { inputs.priceRange.value = inputs.price.value; calculate(); };
+    inputs.priceRange.oninput = () => { inputs.price.value = inputs.priceRange.value; calculate(); };
+    
+    inputs.initial.oninput = () => { inputs.initialRange.value = inputs.initial.value; calculate(); };
+    inputs.initialRange.oninput = () => { inputs.initial.value = inputs.initialRange.value; calculate(); };
+
+    inputs.years.oninput = calculate;
+    inputs.rate.oninput = calculate;
+
+    // Первый расчет при загрузке
+    calculate();
+</script>
+
+</body>
+</html>
