@@ -2,58 +2,102 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Ипотечный калькулятор</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f5f6f8; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; }
+        /* Темная тема (Gemini Style) */
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background-color: #131314; /* Очень темный серый фон */
+            color: #E3E3E3; 
+            margin: 0; 
+            padding: 20px; 
+        }
+        .container { max-width: 600px; margin: 0 auto; padding-bottom: 80px; }
         
         /* Карточки */
-        .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .card { 
+            background: #1E1F20; /* Чуть светлее фон карточек */
+            border-radius: 16px; 
+            padding: 20px; 
+            margin-bottom: 15px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3); 
+        }
         
-        /* Поля ввода */
-        .input-group { margin-bottom: 20px; }
-        .label { font-size: 12px; color: #777; margin-bottom: 5px; display: block; }
-        .input-wrapper { display: flex; align-items: center; border: 1px solid #ddd; border-radius: 8px; padding: 10px; background: #fff; }
-        .input-wrapper input { border: none; font-size: 18px; width: 100%; outline: none; font-weight: 500; }
-        .suffix { color: #999; font-size: 16px; margin-left: 5px; }
+        /* Тексты */
+        .label { font-size: 13px; color: #9AA0A6; margin-bottom: 8px; display: block; }
+        .input-wrapper { 
+            display: flex; 
+            align-items: center; 
+            background: #2D2E30; /* Фон полей ввода */
+            border-radius: 10px; 
+            padding: 12px; 
+            border: 1px solid #444746;
+        }
+        .input-wrapper input, .input-wrapper select { 
+            background: transparent; 
+            border: none; 
+            font-size: 18px; 
+            color: #fff; 
+            width: 100%; 
+            outline: none; 
+            font-weight: 500;
+        }
+        .suffix { color: #9AA0A6; font-size: 16px; margin-left: 5px; }
         
-        /* Слайдеры (ползунки) */
-        input[type=range] { width: 100%; margin-top: 10px; accent-color: #2196F3; cursor: pointer; }
+        /* Слайдеры */
+        input[type=range] { 
+            width: 100%; 
+            margin-top: 15px; 
+            accent-color: #8AB4F8; /* Голубой цвет как у Google */
+            cursor: pointer; 
+            background: transparent;
+        }
+
+        /* Выпадающий список (барабан на iPhone) */
+        select { -webkit-appearance: none; appearance: none; }
         
         /* Результаты */
-        .results { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .result-item { margin-bottom: 15px; }
-        .res-value { font-size: 22px; font-weight: bold; display: block; }
-        .res-label { font-size: 12px; color: #777; }
+        .results { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .result-item { margin-bottom: 10px; }
+        .res-value { font-size: 20px; font-weight: bold; display: block; color: #E3E3E3; }
+        .res-label { font-size: 12px; color: #9AA0A6; }
         
-        /* Цвета как на скрине */
-        .green-text { color: #27ae60; } /* Цвет платежа */
+        .green-text { color: #8AB4F8; } /* Голубой акцент */
+        .main-payment { font-size: 32px; margin-bottom: 5px; color: #A8C7FA; }
         
-        .main-payment { font-size: 28px; margin-bottom: 5px; }
-        
-        /* Адаптив для мобилок */
-        @media (max-width: 400px) {
-            .results { grid-template-columns: 1fr; }
+        /* Кнопка ссылки на канал */
+        .link-btn {
+            display: block;
+            width: 100%;
+            text-align: center;
+            padding: 15px 0;
+            margin-top: 10px;
+            color: #8AB4F8;
+            text-decoration: none;
+            font-weight: 500;
+            border: 1px solid #444746;
+            border-radius: 12px;
+            background: #1E1F20;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- Блок ввода данных -->
+    <!-- Блок ввода -->
     <div class="card">
-        <div class="input-group">
+        <div class="input-group" style="margin-bottom: 20px;">
             <span class="label">Стоимость недвижимости</span>
             <div class="input-wrapper">
                 <input type="number" id="price" value="4000000">
                 <span class="suffix">₽</span>
             </div>
-            <input type="range" id="priceRange" min="500000" max="50000000" step="100000" value="4000000">
+            <input type="range" id="priceRange" min="500000" max="30000000" step="100000" value="4000000">
         </div>
 
-        <div class="input-group">
+        <div class="input-group" style="margin-bottom: 20px;">
             <span class="label">Первоначальный взнос</span>
             <div class="input-wrapper">
                 <input type="number" id="initial" value="2500000">
@@ -63,13 +107,16 @@
         </div>
 
         <div style="display: flex; gap: 15px;">
+            <!-- Срок (Выпадающий список) -->
             <div class="input-group" style="flex: 1;">
                 <span class="label">Срок</span>
                 <div class="input-wrapper">
-                    <input type="number" id="years" value="20">
-                    <span class="suffix">лет</span>
+                    <select id="years">
+                        <!-- Опции добавятся скриптом -->
+                    </select>
                 </div>
             </div>
+            <!-- Ставка -->
             <div class="input-group" style="flex: 1;">
                 <span class="label">Ставка</span>
                 <div class="input-wrapper">
@@ -82,8 +129,8 @@
 
     <!-- Блок результатов -->
     <div class="card">
-        <div class="result-item" style="border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 15px;">
-            <span class="res-value green-text main-payment" id="monthlyPayment">0 ₽</span>
+        <div class="result-item" style="border-bottom: 1px solid #444746; padding-bottom: 15px; margin-bottom: 15px;">
+            <span class="res-value main-payment" id="monthlyPayment">0 ₽</span>
             <span class="res-label">Ежемесячный платеж</span>
         </div>
 
@@ -98,16 +145,34 @@
             </div>
             <div class="result-item">
                 <span class="res-value" id="overpayment">0 ₽</span>
-                <span class="res-label">Переплата по кредиту</span>
+                <span class="res-label">Переплата</span>
+            </div>
+             <div class="result-item">
+                <span class="res-value" id="incomeReq">0 ₽</span>
+                <span class="res-label">Нужный доход</span>
             </div>
         </div>
     </div>
+
+    <!-- Кнопка перехода в канал (опционально внутри WebApp) -->
+    <a href="https://t.me/agentyanaa" class="link-btn" onclick="tg.close()">
+        📢 Канал Яны Рачковской
+    </a>
 </div>
 
 <script>
-    // Инициализация Telegram WebApp
     const tg = window.Telegram.WebApp;
-    tg.expand(); // Раскрыть на весь экран
+    tg.expand();
+
+    // Заполняем выпадающий список годами (от 1 до 30)
+    const yearsSelect = document.getElementById('years');
+    for (let i = 1; i <= 30; i++) {
+        let option = document.createElement('option');
+        option.value = i;
+        option.text = i + (i === 1 ? ' год' : (i >= 2 && i <= 4 ? ' года' : ' лет'));
+        if (i === 20) option.selected = true; // По умолчанию 20 лет
+        yearsSelect.appendChild(option);
+    }
 
     // Элементы
     const inputs = {
@@ -123,66 +188,78 @@
         monthly: document.getElementById('monthlyPayment'),
         loan: document.getElementById('loanAmount'),
         total: document.getElementById('totalPayout'),
-        overpayment: document.getElementById('overpayment')
+        overpayment: document.getElementById('overpayment'),
+        income: document.getElementById('incomeReq')
     };
 
-    // Форматирование денег (1 000 000)
     const fmt = (num) => new Intl.NumberFormat('ru-RU').format(Math.round(num)) + ' ₽';
 
-    // Основная функция расчета
+    // Глобальные переменные для данных расчета
+    let calcData = {};
+
     function calculate() {
         let price = parseFloat(inputs.price.value) || 0;
         let initial = parseFloat(inputs.initial.value) || 0;
         let years = parseFloat(inputs.years.value) || 0;
         let rate = parseFloat(inputs.rate.value) || 0;
 
-        // Синхронизация слайдеров и полей
+        // Синхронизация
         inputs.priceRange.value = price;
-        inputs.initialRange.max = price; // Взнос не больше цены
+        inputs.initialRange.max = price;
         inputs.initialRange.value = initial;
 
-        if (initial > price) {
-            initial = price;
-            inputs.initial.value = price;
-        }
+        if (initial > price) { initial = price; inputs.initial.value = price; }
 
         let loanAmount = price - initial;
         let months = years * 12;
         let monthlyRate = rate / 12 / 100;
-
         let monthlyPayment = 0;
         
         if (loanAmount > 0 && months > 0) {
-            if (monthlyRate === 0) {
-                monthlyPayment = loanAmount / months;
-            } else {
-                monthlyPayment = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, months)) / (Math.pow(1 + monthlyRate, months) - 1);
-            }
+            if (monthlyRate === 0) monthlyPayment = loanAmount / months;
+            else monthlyPayment = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, months)) / (Math.pow(1 + monthlyRate, months) - 1);
         }
 
         let totalPayout = monthlyPayment * months;
         let overpayment = totalPayout - loanAmount;
+        let incomeReq = monthlyPayment * 1.6; // Примерный доход (платеж * 1.6)
 
-        // Вывод результатов
         outputs.monthly.innerText = fmt(monthlyPayment);
         outputs.loan.innerText = fmt(loanAmount);
         outputs.total.innerText = fmt(totalPayout);
         outputs.overpayment.innerText = fmt(overpayment);
+        outputs.income.innerText = fmt(incomeReq);
+
+        // Сохраняем данные для отправки боту
+        calcData = {
+            price: fmt(price),
+            initial: fmt(initial),
+            years: years,
+            rate: rate,
+            monthly: fmt(monthlyPayment),
+            loan: fmt(loanAmount),
+            overpayment: fmt(overpayment),
+            total: fmt(totalPayout)
+        };
     }
 
-    // Слушатели событий (когда меняем цифры)
+    // Настраиваем ГЛАВНУЮ КНОПКУ (MainButton) внизу экрана Telegram
+    tg.MainButton.setText("ЗАФИКСИРОВАТЬ РАСЧЕТЫ ✅");
+    tg.MainButton.show();
+    tg.MainButton.onClick(function() {
+        // Отправляем данные обратно боту
+        tg.sendData(JSON.stringify(calcData));
+    });
+
+    // Слушатели
     inputs.price.oninput = () => { inputs.priceRange.value = inputs.price.value; calculate(); };
     inputs.priceRange.oninput = () => { inputs.price.value = inputs.priceRange.value; calculate(); };
-    
     inputs.initial.oninput = () => { inputs.initialRange.value = inputs.initial.value; calculate(); };
     inputs.initialRange.oninput = () => { inputs.initial.value = inputs.initialRange.value; calculate(); };
-
-    inputs.years.oninput = calculate;
+    inputs.years.onchange = calculate; // Для select используем onchange
     inputs.rate.oninput = calculate;
 
-    // Первый расчет при загрузке
     calculate();
 </script>
-
 </body>
 </html>
